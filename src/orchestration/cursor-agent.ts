@@ -5,12 +5,13 @@ export const runCursorPrompt = async (args: {
   prompt: string;
   modelId: string;
   cwd: string;
+  agentName: string;
 }): Promise<string> => {
   const agent = await Agent.create({
     apiKey: env.CURSOR_API_KEY,
     model: { id: args.modelId },
     local: { cwd: args.cwd },
-    name: "TraceBack Surgeon",
+    name: args.agentName,
   });
 
   try {

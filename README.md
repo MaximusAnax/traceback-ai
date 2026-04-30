@@ -12,6 +12,8 @@ It ingests incidents (Sentry/GitHub), queues maintenance jobs with BullMQ, orche
 - Surgeon path wired to `@cursor/sdk`
 - Native Sentry HMAC verification (`x-sentry-hook-signature` / timestamp validation)
 - Buildable TypeScript CLI (`server` and `worker` modes)
+- Budget-aware model routing for Maestro/Surgeon/Verifier
+- Evidence artifact generation + verification gate enforcement
 
 ## Stack
 
@@ -69,6 +71,10 @@ Every autonomous PR is expected to include:
 - decision log (`decision-log.json` or equivalent)
 - reasoning log (`reasoning_log.md`)
 - execution evidence (test/lint output, and video for visual flows)
+
+Current scaffold enforces artifact presence for:
+- `artifacts/<traceId>/reasoning_log.md`
+- `artifacts/<traceId>/decision-log.json`
 
 ## Open-Core Boundary
 

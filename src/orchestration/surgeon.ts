@@ -1,8 +1,8 @@
 import { ChangeSetPacket } from "../contracts/changeset-packet.js";
 import { PlanPacket } from "../contracts/plan-packet.js";
 import { MaintenanceJob } from "../queue/jobs/maintenance-job.js";
-import { env } from "../config/env.js";
 import { runCursorPrompt } from "./cursor-agent.js";
+import { chooseModelForRole } from "./model-router.js";
 
 export const runSurgeon = async (
   job: MaintenanceJob,
@@ -26,11 +26,13 @@ export const runSurgeon = async (
 
   let diffSummary = `Prepared implementation strategy for ${job.incident.eventId}.`;
   const knownLimitations: string[] = [];
+  const routing = chooseModelForRole("surgeon", job);
   try {
     diffSummary = await runCursorPrompt({
       prompt,
-      modelId: env.CURSOR_SURGEON_MODEL,
+      modelId: routing.modelId,
       cwd: process.cwd(),
+      agentName: "TraceBack Surgeon",
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : "unknown Cursor SDK error";
@@ -42,6 +44,6 @@ export const runSurgeon = async (
     filesModified: plan.filesOfInterest,
     whyThisFix: "Implements the planned narrow patch surface to reduce regression risk.",
     testsAddedOrUpdated: ["traceback_repro.test.ts"],
-    knownLimitations,
+    knownLimitations: [...knownLimitations, `Routing reason: ${routing.reason}`],
   };
 };

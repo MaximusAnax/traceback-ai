@@ -38,3 +38,15 @@
 3. Upgrade Maestro and Verifier to SDK-backed runs.
 4. Add MCP-ready Sentry context provider interface.
 5. Enforce evidence gate artifacts before PR-ready transitions.
+
+## 2026-04-30 (Implementation Wave 2)
+
+### Completed
+
+- Added budget-aware model router in `src/orchestration/model-router.ts`.
+- Upgraded Maestro and Verifier orchestration paths to SDK-backed prompts with fallbacks.
+- Added MCP-ready Sentry context provider contract and inline provider implementation.
+- Added evidence artifact recorder and gate checks:
+  - `src/verification/artifact-recorder.ts`
+  - `src/verification/gate.ts`
+- Worker now records reasoning/decision artifacts before verification gate execution.
