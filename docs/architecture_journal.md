@@ -105,3 +105,21 @@ This document is the project memory for architecture decisions, sequencing, and 
 
 - E2B path is disabled unless both `E2B_API_KEY` and `E2B_REPRO_COMMAND` are configured.
 - Fallback to Cursor Cloud reproduction is skipped unless `CURSOR_RUNTIME=cloud` and repo URL are configured.
+
+## 2026-04-30 - Evidence Gate Detail Hardening
+
+### Decisions
+
+1. Verification gate output should be machine-readable at per-artifact granularity.
+2. Gate failures remain non-ambiguous and deterministic with explicit missing artifact records.
+
+### Implementation
+
+- Expanded `VerificationPacket` with `gateChecks` (artifact URI + existence + required flag).
+- Updated evidence gate evaluator to return both aggregate decision and check-level details.
+- Updated verifier orchestration to include `gateChecks` in outbound packet.
+- Added focused unit tests for gate pass/fail behavior and check record correctness.
+
+### Operational Notes
+
+- Any downstream PR publisher or UI should prefer `gateChecks` over string parsing for artifact audit display.

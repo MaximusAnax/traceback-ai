@@ -67,6 +67,7 @@ export const runVerifier = async (
 
   return {
     gateStatus: gate.passed ? "PASS" : "FAIL",
+    gateChecks: gate.checks,
     testResults: [testResult],
     securityFindings: gate.failures,
     artifactUris,

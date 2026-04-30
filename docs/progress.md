@@ -135,3 +135,23 @@
 ### Blocker
 
 - Live E2B reproduction requires runtime `E2B_API_KEY` and a concrete `E2B_REPRO_COMMAND` implementation.
+
+## 2026-04-30 (Phase 7 - Evidence Gate Detail Hardening)
+
+### Completed
+
+- Strengthened evidence gate output contract:
+  - `VerificationPacket` now includes `gateChecks` with per-artifact existence details.
+- Updated gate evaluator (`src/verification/gate.ts`) to return:
+  - `passed`
+  - `failures`
+  - `checks` with `{ artifactUri, exists, required }`.
+- Updated verifier to thread detailed gate checks into final packet output.
+- Added gate evaluator tests in `src/verification/gate.test.ts`:
+  - PASS path with all artifacts present
+  - FAIL path with missing artifact and explicit check detail assertion.
+- Updated README to document artifact-level verifier gate visibility.
+
+### Blocker
+
+- None in code path; full value depends on downstream surfaces consuming `gateChecks` (CLI/UI/reporting).

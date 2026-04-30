@@ -91,6 +91,8 @@ Current scaffold enforces artifact presence for:
 - `artifacts/<traceId>/reproduction-log.json`
 - `artifacts/<traceId>/runs/{maestro|surgeon|verifier}.json`
 
+Verifier output now includes per-artifact gate checks in addition to PASS/FAIL status, so reviewers can quickly see which required artifacts were present or missing.
+
 ## Open-Core Boundary
 
 - OSS Core: queue/orchestration/CLI/BYOK
