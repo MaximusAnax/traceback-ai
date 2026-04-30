@@ -25,12 +25,14 @@ You do not have to pick between E2B and Cursor Cloud; each serves a distinct rol
 
 To maximize your **$100 Codex credits** and **Cursor Pro plan**, TraceBack uses a tiered routing strategy within the SDK :
 
-| **Workflow Step** | **Logic Component** | **Model Selection** | **Resource Cost** |
-| --- | --- | --- | --- |
-| **Discovery** | Querying codebase index | SDK (Auto Model) | Included in Pro |
-| **Planning** | Generating the "Blueprint" | Claude 4.6 Opus | Deducted from $20 credit pool    |
-| **Fixing** | Surgical implementation | **GPT-5.4 Codex** | **Deducted from your $100 credits**    |
-| **Verification** | Running tests / Linting | GPT-5 Mini | High-speed, low-cost utility    |
+
+| **Workflow Step** | **Logic Component**        | **Model Selection** | **Resource Cost**                   |
+| ----------------- | -------------------------- | ------------------- | ----------------------------------- |
+| **Discovery**     | Querying codebase index    | SDK (Auto Model)    | Included in Pro                     |
+| **Planning**      | Generating the "Blueprint" | Claude 4.6 Opus     | Deducted from $20 credit pool       |
+| **Fixing**        | Surgical implementation    | **GPT-5.4 Codex**   | **Deducted from your $100 credits** |
+| **Verification**  | Running tests / Linting    | GPT-5 Mini          | High-speed, low-cost utility        |
+
 
 ## 3. The "SDK Wrapper" Agent Loop
 
