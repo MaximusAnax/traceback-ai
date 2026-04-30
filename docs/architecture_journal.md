@@ -78,3 +78,30 @@ This document is the project memory for architecture decisions, sequencing, and 
 ### Operational Notes
 
 - For `WEAVE_SINK_MODE=wandb`, missing credentials/config result in warning logs and continued local trace persistence.
+
+## 2026-04-30 - Sandbox Orchestrator (E2B-first)
+
+### Decisions
+
+1. Reproduction attempts run before planning to improve Maestro context quality.
+2. Reproduction strategy is ordered: E2B first, Cursor Cloud fallback second.
+3. Reproduction failures or skips must not block the maintenance pipeline.
+
+### Implementation
+
+- Added typed reproduction packet contract:
+  - `src/contracts/reproduction-packet.ts`
+- Added orchestrator:
+  - `src/sandbox/reproduction-orchestrator.ts`
+  - E2B execution path uses `E2B_REPRO_COMMAND` with injected incident context env.
+  - Cursor Cloud fallback uses SDK prompt path when cloud runtime is configured.
+- Worker wiring:
+  - `src/queue/workers/maintenance.worker.ts` now runs reproduction before Maestro.
+  - Reproduction summary/status are passed into Maestro prompt context.
+- Evidence updates:
+  - Added `reproduction-log.json` artifact alongside reasoning and decision logs.
+
+### Operational Notes
+
+- E2B path is disabled unless both `E2B_API_KEY` and `E2B_REPRO_COMMAND` are configured.
+- Fallback to Cursor Cloud reproduction is skipped unless `CURSOR_RUNTIME=cloud` and repo URL are configured.

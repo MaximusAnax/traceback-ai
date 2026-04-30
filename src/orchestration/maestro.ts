@@ -9,8 +9,12 @@ import { extractJsonObject } from "../utils/json.js";
 import { persistRunEnvelope } from "../observability/cost-ledger.js";
 import { logger } from "../utils/logger.js";
 import { recordWeaveTraceEvent } from "../observability/weave.js";
+import { ReproductionPacket } from "../contracts/reproduction-packet.js";
 
-export const runMaestro = async (job: MaintenanceJob): Promise<PlanPacket> => {
+export const runMaestro = async (
+  job: MaintenanceJob,
+  reproduction?: ReproductionPacket,
+): Promise<PlanPacket> => {
   const routing = chooseModelForRole("maestro", job);
   const contextProvider = createSentryContextProvider();
   let context = await new InlineSentryContextProvider().getContext(job);
@@ -66,6 +70,8 @@ export const runMaestro = async (job: MaintenanceJob): Promise<PlanPacket> => {
     `Use this schema keys: incidentSummary, rootCauseHypotheses, filesOfInterest, proposedChanges, verificationPlan, riskFlags, budgetLimits.`,
     `Incident event id: ${job.incident.eventId}`,
     `Severity: ${job.incident.severity}`,
+    `Reproduction status: ${reproduction?.status ?? "SKIP"}`,
+    `Reproduction summary: ${reproduction?.summary ?? "No reproduction attempt was executed."}`,
     `Context repository: ${context.repository.owner}/${context.repository.name}`,
     `Stacktrace:\n${context.stacktrace}`,
     `Breadcrumbs:\n- ${context.breadcrumbs.join("\n- ") || "none"}`,

@@ -17,6 +17,7 @@ export const runVerifier = async (
   const artifactUris = [
     `artifacts/${job.traceId}/reasoning_log.md`,
     `artifacts/${job.traceId}/decision-log.json`,
+    `artifacts/${job.traceId}/reproduction-log.json`,
   ];
   const gate = await evaluateEvidenceGate(artifactUris);
 

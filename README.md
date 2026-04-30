@@ -55,6 +55,7 @@ cp .env.example .env
    - `WEAVE_TRACE_LOG_PATH` (JSONL local trace log path)
    - `WANDB_BASE_URL`, `WANDB_API_KEY`, `WANDB_ENTITY`, `WANDB_PROJECT` (required for `WEAVE_SINK_MODE=wandb`)
    - `WEAVE_REMOTE_TIMEOUT_MS` (remote Weave sink timeout budget in ms)
+   - `E2B_API_KEY`, `E2B_REPRO_COMMAND`, `E2B_REPRO_TIMEOUT_MS` (E2B-first reproduction orchestration controls)
 
 4. Start Redis and run:
 
@@ -87,6 +88,7 @@ Every autonomous PR is expected to include:
 Current scaffold enforces artifact presence for:
 - `artifacts/<traceId>/reasoning_log.md`
 - `artifacts/<traceId>/decision-log.json`
+- `artifacts/<traceId>/reproduction-log.json`
 - `artifacts/<traceId>/runs/{maestro|surgeon|verifier}.json`
 
 ## Open-Core Boundary

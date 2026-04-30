@@ -112,3 +112,26 @@
 ### Blocker
 
 - Remote W&B sink requires valid credentials and project/entity routing at runtime.
+
+## 2026-04-30 (Phase 6 - Sandbox Orchestrator)
+
+### Completed
+
+- Added E2B-first reproduction orchestrator in `src/sandbox/reproduction-orchestrator.ts`:
+  - Driver order: `e2b` then `cursor-cloud` fallback
+  - Outcome contract captured in `src/contracts/reproduction-packet.ts`
+  - Reproduction attempt emits Weave trace events for auditability.
+- Wired worker flow to run reproduction before planning:
+  - `maintenance.worker` now executes `runReproductionOrchestrator(payload)`
+  - Maestro receives reproduction status/summary as additional planning context.
+- Extended evidence artifact recorder:
+  - Added `artifacts/<traceId>/reproduction-log.json`
+  - Decision log now includes reproduction payload for reviewer context.
+- Extended verifier artifact URI set to include `reproduction-log.json`.
+- Added sandbox orchestrator test coverage in:
+  - `src/sandbox/reproduction-orchestrator.test.ts`
+  - validates deterministic SKIP behavior when drivers are not configured.
+
+### Blocker
+
+- Live E2B reproduction requires runtime `E2B_API_KEY` and a concrete `E2B_REPRO_COMMAND` implementation.

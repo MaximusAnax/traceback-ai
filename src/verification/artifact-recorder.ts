@@ -3,10 +3,12 @@ import path from "node:path";
 import { MaintenanceJob } from "../queue/jobs/maintenance-job.js";
 import { PlanPacket } from "../contracts/plan-packet.js";
 import { ChangeSetPacket } from "../contracts/changeset-packet.js";
+import { ReproductionPacket } from "../contracts/reproduction-packet.js";
 
 export type EvidenceArtifacts = {
   reasoningLogPath: string;
   decisionLogPath: string;
+  reproductionLogPath: string;
 };
 
 const artifactsRoot = path.resolve(process.cwd(), "artifacts");
@@ -15,12 +17,14 @@ export const recordEvidenceArtifacts = async (args: {
   job: MaintenanceJob;
   plan: PlanPacket;
   changeSet: ChangeSetPacket;
+  reproduction?: ReproductionPacket;
 }): Promise<EvidenceArtifacts> => {
   const folder = path.join(artifactsRoot, args.job.traceId);
   await mkdir(folder, { recursive: true });
 
   const reasoningLogPath = path.join(folder, "reasoning_log.md");
   const decisionLogPath = path.join(folder, "decision-log.json");
+  const reproductionLogPath = path.join(folder, "reproduction-log.json");
 
   const reasoningMarkdown = [
     `# TraceBack Reasoning Log`,
@@ -48,6 +52,7 @@ export const recordEvidenceArtifacts = async (args: {
       eventId: args.job.incident.eventId,
       verificationArtifacts: ["reasoning_log.md", "decision-log.json"],
       generatedAt: new Date().toISOString(),
+      reproduction: args.reproduction ?? null,
       plan: args.plan,
       changeSet: args.changeSet,
     },
@@ -55,8 +60,11 @@ export const recordEvidenceArtifacts = async (args: {
     2,
   );
 
+  const reproductionLogJson = JSON.stringify(args.reproduction ?? null, null, 2);
+
   await writeFile(reasoningLogPath, reasoningMarkdown, "utf8");
   await writeFile(decisionLogPath, decisionLogJson, "utf8");
+  await writeFile(reproductionLogPath, reproductionLogJson, "utf8");
 
-  return { reasoningLogPath, decisionLogPath };
+  return { reasoningLogPath, decisionLogPath, reproductionLogPath };
 };
