@@ -12,7 +12,7 @@ import { publishReviewPacket } from "../../publishing/review-publisher.js";
 
 export const startMaintenanceWorker = (): Worker => {
   const worker = new Worker(
-    "maintenance:ingest",
+    "maintenance-ingest",
     async (job) => {
       const payload = MaintenanceJobSchema.parse(job.data);
       await recordWeaveTraceEvent({
