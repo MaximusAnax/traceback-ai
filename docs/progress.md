@@ -178,3 +178,26 @@
 ### Blocker
 
 - `PR_PUBLISH_MODE=github` currently publishes structured packet metadata only; full branch/PR side effects via `gh` are not yet executed in-process.
+
+## 2026-04-30 (Phase 9 - GitHub Publish Side Effects)
+
+### Completed
+
+- Upgraded review packet publishing to execute optional GitHub PR creation when:
+  - `PR_PUBLISH_MODE=github`
+  - recommendation is `open-pr`
+  - `GITHUB_REPOSITORY` is configured.
+- `src/publishing/review-publisher.ts` now:
+  - invokes `gh pr create` with configured base/head metadata
+  - captures publish outcome status (`skipped`, `created`, `failed`)
+  - records PR URL when available.
+- Review packet contract extended with publish execution result metadata:
+  - `payload.publish.result.{attempted,status,prUrl,reason}`
+- Worker logs now include publish status and PR URL (when created).
+- Added unit coverage updates in `src/publishing/review-publisher.test.ts`:
+  - dry-run skipped status
+  - github mode failure path when repository is missing.
+
+### Blocker
+
+- Successful `gh pr create` execution requires pre-existing head branch and authenticated GitHub CLI context at runtime.

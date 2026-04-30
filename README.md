@@ -96,6 +96,8 @@ Verifier output now includes per-artifact gate checks in addition to PASS/FAIL s
 
 The worker now emits a structured review packet artifact at `artifacts/<traceId>/review-packet.json` (path configurable), containing incident, reproduction, plan, change set, verification, and PR recommendation metadata.
 
+When `PR_PUBLISH_MODE=github`, the publisher attempts `gh pr create` for gate-approved fixes and records publish result metadata (`created`, `failed`, or `skipped`) in the review packet.
+
 ## Open-Core Boundary
 
 - OSS Core: queue/orchestration/CLI/BYOK

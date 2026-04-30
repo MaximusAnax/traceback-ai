@@ -147,3 +147,22 @@ This document is the project memory for architecture decisions, sequencing, and 
 ### Operational Notes
 
 - Current `github` mode captures metadata intent in the packet; direct `gh` branch/PR mutation is intentionally deferred.
+
+## 2026-04-30 - GitHub Publish Side Effects
+
+### Decisions
+
+1. GitHub PR creation is mode-gated and only attempted for gate-approved recommendations.
+2. Publish execution outcome must be embedded in review packet payload for deterministic audit trails.
+3. Publishing failures should not crash the maintenance pipeline; they should downgrade to recorded failure state.
+
+### Implementation
+
+- `src/publishing/review-publisher.ts` now conditionally executes `gh pr create`.
+- Added structured publish result metadata on `payload.publish.result`.
+- Worker log context now includes publish status and PR URL when available.
+- Added tests for dry-run skip and github-mode missing-repo failure.
+
+### Operational Notes
+
+- Runtime `gh` execution depends on authenticated CLI session and an existing head branch.

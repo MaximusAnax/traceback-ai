@@ -44,6 +44,8 @@ export const startMaintenanceWorker = (): Worker => {
           artifacts: verification.artifactUris,
           reviewPacket: review.path,
           recommendation: review.recommendation,
+          publishStatus: review.publishStatus,
+          prUrl: review.prUrl,
         },
         "job processed",
       );

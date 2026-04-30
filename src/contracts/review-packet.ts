@@ -25,6 +25,12 @@ export const ReviewPacketPayloadSchema = z.object({
     baseBranch: z.string().min(1),
     headBranch: z.string().min(1),
     repository: z.string().optional(),
+    result: z.object({
+      attempted: z.boolean(),
+      status: z.enum(["skipped", "created", "failed"]),
+      prUrl: z.string().url().optional(),
+      reason: z.string().optional(),
+    }),
   }),
   recommendation: z.enum(["open-pr", "hold"]),
 });

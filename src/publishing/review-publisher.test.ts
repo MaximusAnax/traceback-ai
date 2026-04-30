@@ -66,14 +66,39 @@ const verification: VerificationPacket = {
 test("writes structured review packet artifact", async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), "traceback-review-"));
   const priorPath = env.PR_REVIEW_PACKET_PATH;
+  const priorMode = env.PR_PUBLISH_MODE;
   env.PR_REVIEW_PACKET_PATH = path.join(dir, "{traceId}.json");
+  env.PR_PUBLISH_MODE = "dry-run";
 
   try {
     const result = await publishReviewPacket({ job, reproduction, plan, changeSet, verification });
     const raw = await readFile(result.path, "utf8");
     assert.match(raw, /"schemaVersion": "1.0.0"/);
     assert.match(raw, /"recommendation": "open-pr"/);
+    assert.equal(result.publishStatus, "skipped");
   } finally {
     env.PR_REVIEW_PACKET_PATH = priorPath;
+    env.PR_PUBLISH_MODE = priorMode;
+  }
+});
+
+test("returns failed publish status when github mode lacks repository", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "traceback-review-"));
+  const priorPath = env.PR_REVIEW_PACKET_PATH;
+  const priorMode = env.PR_PUBLISH_MODE;
+  const priorRepo = env.GITHUB_REPOSITORY;
+  env.PR_REVIEW_PACKET_PATH = path.join(dir, "{traceId}.json");
+  env.PR_PUBLISH_MODE = "github";
+  env.GITHUB_REPOSITORY = undefined;
+
+  try {
+    const result = await publishReviewPacket({ job, reproduction, plan, changeSet, verification });
+    assert.equal(result.publishStatus, "failed");
+    const raw = await readFile(result.path, "utf8");
+    assert.match(raw, /"status": "failed"/);
+  } finally {
+    env.PR_REVIEW_PACKET_PATH = priorPath;
+    env.PR_PUBLISH_MODE = priorMode;
+    env.GITHUB_REPOSITORY = priorRepo;
   }
 });
