@@ -89,3 +89,26 @@
 ### Blocker
 
 - None in code path; live pulls require valid Sentry MCP credentials/tool access at runtime.
+
+## 2026-04-30 (Phase 5 - Traceability Sink Hardening)
+
+### Completed
+
+- Added dual-mode Weave trace sink configuration:
+  - `WEAVE_SINK_MODE=local|wandb`
+  - Existing JSONL local sink remains default and always-on persistence path.
+- Added optional W&B Weave export path in `src/observability/weave.ts`:
+  - Remote POST with bearer auth and timeout budget (`WEAVE_REMOTE_TIMEOUT_MS`)
+  - Non-fatal export behavior with warning logs; local trace persistence is preserved.
+- Added new env contracts for remote Weave sink:
+  - `WANDB_BASE_URL`
+  - `WANDB_API_KEY`
+  - `WANDB_ENTITY`
+  - `WANDB_PROJECT`
+- Added observability tests in `src/observability/weave.test.ts` for:
+  - local JSONL trace persistence
+  - remote sink failure tolerance (no throw + local persistence intact)
+
+### Blocker
+
+- Remote W&B sink requires valid credentials and project/entity routing at runtime.

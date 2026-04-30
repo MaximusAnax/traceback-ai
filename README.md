@@ -51,7 +51,10 @@ cp .env.example .env
    - `SENTRY_MCP_SERVER` / `SENTRY_MCP_TOOL` (used when source is `mcp`)
    - `SENTRY_PERSONAL_ACCESS_TOKEN` (required by `.cursor/mcp.json` if your Sentry MCP server uses token auth)
    - `SENTRY_MCP_TIMEOUT_MS` / `SENTRY_MCP_MAX_RETRIES` (MCP resilience controls)
-   - `WEAVE_TRACE_LOG_PATH` (JSONL trace log path for agent action observability)
+   - `WEAVE_SINK_MODE` (`local` or `wandb`)
+   - `WEAVE_TRACE_LOG_PATH` (JSONL local trace log path)
+   - `WANDB_BASE_URL`, `WANDB_API_KEY`, `WANDB_ENTITY`, `WANDB_PROJECT` (required for `WEAVE_SINK_MODE=wandb`)
+   - `WEAVE_REMOTE_TIMEOUT_MS` (remote Weave sink timeout budget in ms)
 
 4. Start Redis and run:
 

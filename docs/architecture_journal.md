@@ -55,3 +55,26 @@ This document is the project memory for architecture decisions, sequencing, and 
 ### Operational Notes
 
 - Local testing requires exposing port `3000` (server default) and setting Sentry webhook URL to `https://<tunnel-domain>/webhooks/sentry`.
+
+## 2026-04-30 - Weave Trace Sink Hardening
+
+### Decisions
+
+1. Keep local append-only JSONL trace stream as the authoritative OSS-safe audit path.
+2. Add optional W&B/Weave remote export as a best-effort secondary sink.
+3. Never fail maintenance jobs due to remote observability transport errors.
+
+### Implementation
+
+- Added sink mode controls in env schema:
+  - `WEAVE_SINK_MODE` (`local` or `wandb`)
+  - `WEAVE_REMOTE_TIMEOUT_MS`
+  - `WANDB_BASE_URL`, `WANDB_API_KEY`, `WANDB_ENTITY`, `WANDB_PROJECT`
+- Updated `src/observability/weave.ts`:
+  - Always writes local JSONL trace event.
+  - Optionally exports to W&B with timeout and warning-only failure handling.
+- Added `src/observability/weave.test.ts` coverage for local write path and remote-failure tolerance.
+
+### Operational Notes
+
+- For `WEAVE_SINK_MODE=wandb`, missing credentials/config result in warning logs and continued local trace persistence.
