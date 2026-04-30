@@ -8,6 +8,7 @@ import { runVerifier } from "../../orchestration/verifier.js";
 import { recordEvidenceArtifacts } from "../../verification/artifact-recorder.js";
 import { recordWeaveTraceEvent } from "../../observability/weave.js";
 import { runReproductionOrchestrator } from "../../sandbox/reproduction-orchestrator.js";
+import { publishReviewPacket } from "../../publishing/review-publisher.js";
 
 export const startMaintenanceWorker = (): Worker => {
   const worker = new Worker(
@@ -28,9 +29,22 @@ export const startMaintenanceWorker = (): Worker => {
       const changeSet = await runSurgeon(payload, plan);
       await recordEvidenceArtifacts({ job: payload, plan, changeSet, reproduction });
       const verification = await runVerifier(payload, plan, changeSet);
+      const review = await publishReviewPacket({
+        job: payload,
+        reproduction,
+        plan,
+        changeSet,
+        verification,
+      });
 
       logger.info(
-        { traceId: payload.traceId, status: verification.gateStatus, artifacts: verification.artifactUris },
+        {
+          traceId: payload.traceId,
+          status: verification.gateStatus,
+          artifacts: verification.artifactUris,
+          reviewPacket: review.path,
+          recommendation: review.recommendation,
+        },
         "job processed",
       );
       await recordWeaveTraceEvent({
@@ -40,7 +54,7 @@ export const startMaintenanceWorker = (): Worker => {
         status: "succeeded",
         metadata: { gateStatus: verification.gateStatus },
       });
-      return { reproduction, plan, changeSet, verification };
+      return { reproduction, plan, changeSet, verification, review };
     },
     { connection: redisConnection, concurrency: 3 },
   );

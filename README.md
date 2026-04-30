@@ -56,6 +56,7 @@ cp .env.example .env
    - `WANDB_BASE_URL`, `WANDB_API_KEY`, `WANDB_ENTITY`, `WANDB_PROJECT` (required for `WEAVE_SINK_MODE=wandb`)
    - `WEAVE_REMOTE_TIMEOUT_MS` (remote Weave sink timeout budget in ms)
    - `E2B_API_KEY`, `E2B_REPRO_COMMAND`, `E2B_REPRO_TIMEOUT_MS` (E2B-first reproduction orchestration controls)
+   - `PR_PUBLISH_MODE`, `PR_REVIEW_PACKET_PATH`, `GITHUB_REPOSITORY`, `GITHUB_BASE_BRANCH`, `GITHUB_HEAD_BRANCH_PREFIX` (PR review packet publishing controls)
 
 4. Start Redis and run:
 
@@ -92,6 +93,8 @@ Current scaffold enforces artifact presence for:
 - `artifacts/<traceId>/runs/{maestro|surgeon|verifier}.json`
 
 Verifier output now includes per-artifact gate checks in addition to PASS/FAIL status, so reviewers can quickly see which required artifacts were present or missing.
+
+The worker now emits a structured review packet artifact at `artifacts/<traceId>/review-packet.json` (path configurable), containing incident, reproduction, plan, change set, verification, and PR recommendation metadata.
 
 ## Open-Core Boundary
 

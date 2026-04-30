@@ -31,6 +31,14 @@ const EnvSchema = z.object({
   E2B_API_KEY: z.string().optional(),
   E2B_REPRO_COMMAND: z.string().optional(),
   E2B_REPRO_TIMEOUT_MS: z.coerce.number().int().positive().default(45000),
+  PR_PUBLISH_MODE: z.enum(["disabled", "dry-run", "github"]).default("dry-run"),
+  PR_REVIEW_PACKET_PATH: z
+    .string()
+    .min(1)
+    .default("artifacts/{traceId}/review-packet.json"),
+  GITHUB_REPOSITORY: z.string().optional(),
+  GITHUB_BASE_BRANCH: z.string().min(1).default("main"),
+  GITHUB_HEAD_BRANCH_PREFIX: z.string().min(1).default("traceback/fix"),
   CURSOR_SURGEON_MODEL: z.string().min(1).default("gpt-5.3-codex"),
   CURSOR_MAESTRO_MODEL: z.string().min(1).default("claude-opus-4-6"),
   CURSOR_VERIFIER_MODEL: z.string().min(1).default("gpt-5-mini"),

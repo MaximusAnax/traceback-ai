@@ -123,3 +123,27 @@ This document is the project memory for architecture decisions, sequencing, and 
 ### Operational Notes
 
 - Any downstream PR publisher or UI should prefer `gateChecks` over string parsing for artifact audit display.
+
+## 2026-04-30 - Structured PR Review Packet Stage
+
+### Decisions
+
+1. PR publishing stage should first emit a deterministic, machine-readable review packet artifact.
+2. Recommendation generation is gate-driven (`PASS => open-pr`, `FAIL => hold`).
+3. Side-effectful GitHub operations remain optional and mode-gated.
+
+### Implementation
+
+- Added review packet schema + envelope contract:
+  - `src/contracts/review-packet.ts`
+- Added publisher:
+  - `src/publishing/review-publisher.ts`
+  - Persists `review-packet.json` using configurable template path with `{traceId}` substitution.
+- Worker integration:
+  - Publishing now runs after verification.
+  - Logger includes recommendation and packet path.
+- Added env controls for publish mode and branch targeting metadata.
+
+### Operational Notes
+
+- Current `github` mode captures metadata intent in the packet; direct `gh` branch/PR mutation is intentionally deferred.

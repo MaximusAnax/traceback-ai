@@ -155,3 +155,26 @@
 ### Blocker
 
 - None in code path; full value depends on downstream surfaces consuming `gateChecks` (CLI/UI/reporting).
+
+## 2026-04-30 (Phase 8 - Structured PR Review Packet)
+
+### Completed
+
+- Added structured review packet contracts in `src/contracts/review-packet.ts`.
+- Added review packet publisher in `src/publishing/review-publisher.ts`:
+  - Persists normalized review envelope artifact.
+  - Includes publish metadata (`mode`, `baseBranch`, `headBranch`, `repository`) and recommendation (`open-pr` or `hold`).
+- Wired worker to publish review packet after verification:
+  - `maintenance.worker` now logs review packet path + recommendation.
+  - Worker return payload now includes `review`.
+- Added env controls for publishing stage:
+  - `PR_PUBLISH_MODE` (`disabled`, `dry-run`, `github`)
+  - `PR_REVIEW_PACKET_PATH`
+  - `GITHUB_REPOSITORY`
+  - `GITHUB_BASE_BRANCH`
+  - `GITHUB_HEAD_BRANCH_PREFIX`
+- Added unit coverage in `src/publishing/review-publisher.test.ts` for artifact generation and recommendation encoding.
+
+### Blocker
+
+- `PR_PUBLISH_MODE=github` currently publishes structured packet metadata only; full branch/PR side effects via `gh` are not yet executed in-process.
