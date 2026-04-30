@@ -1,0 +1,21 @@
+---
+alwaysApply: false
+---
+description: Standards for E2B reproduction and artifact generation.
+
+globs: ["src/sandbox//*", "src/artifacts//*"]
+
+Sandbox & Verification Standards
+Environment:
+
+Use E2B for fast reproduction (<200ms cold start).
+
+Use Cursor Cloud Agent VMs for visual verification (Playwright/Browser).   
+
+Artifacts:
+
+Every PR must include a reasoning_log.md.
+
+Use the integrated browser to record video demos of frontend fixes.   
+
+Cleanup: Ensure ephemeral environments are explicitly terminated to save credits.

@@ -1,0 +1,20 @@
+---
+alwaysApply: false
+---
+description: Rules for implementing the maintenance logic loop using @cursor/sdk.
+
+globs: ["src/agents//*.ts", "src/orchestrator//*"]
+
+Maintenance Loop Protocol
+
+Discovery: Use agent.send with @codebase references to find the bug's root cause.   
+
+Reproduction: Synthetic tests (traceback_repro.test.ts) MUST fail before the fix phase starts.
+
+Surgical Coding: Prefer GPT-5.4 Codex for the implementation phase. Bias toward "minimal edits" to preserve project patterns.   
+
+Safety:
+
+Subagent depth limit: 1.
+
+Never allow agents to modify .env or configuration files unless explicitly authorized.

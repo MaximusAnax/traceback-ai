@@ -1,0 +1,21 @@
+---
+alwaysApply: true
+---
+description: Global standards for TraceBack's core architecture and tech stack.
+globs: ["/*.ts", "src//*"]
+
+TraceBack Architectural Standards
+
+Core Stack: Node.js 22+, TypeScript (Strict), Fastify, BullMQ, Redis.
+
+Agent Orchestration: Use @cursor/sdk for the primary agent loop.
+
+Design Pattern: Supervisor-Worker (Maestro-Surgeon-Verifier).
+
+Invariants:
+
+Every agent action must be traceable via Weights & Biases Weave.
+
+No logic should run synchronously in the webhook handler; always enqueue via BullMQ.
+
+Use Zod for all input validation (Webhooks, API, MCP Tooling).
