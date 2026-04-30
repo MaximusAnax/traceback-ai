@@ -1,5 +1,10 @@
 # TraceBack Progress
 
+## Current Snapshot
+
+- Canonical coverage status now lives in `docs/implementation_status.md`.
+- This file remains the chronological execution log of implementation waves and phases.
+
 ## 2026-04-30
 
 ### Completed
@@ -201,3 +206,4 @@
 ### Blocker
 
 - Successful `gh pr create` execution requires pre-existing head branch and authenticated GitHub CLI context at runtime.
+

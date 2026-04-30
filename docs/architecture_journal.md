@@ -16,24 +16,14 @@ This document is the project memory for architecture decisions, sequencing, and 
 
 - Server entry: `src/server/fastify.ts`
 - Sentry route: `src/server/routes/sentry-webhook.ts`
-- Queue setup: `src/queue/*`
+- Queue setup: `src/queue/`*
 - Worker loop: `src/queue/workers/maintenance.worker.ts`
 - Orchestration: `src/orchestration/*`
 
-### Known Gaps
+### Historical Context
 
-1. Maestro and Verifier still use deterministic local logic and should be upgraded to model-routed SDK calls.
-2. Sentry MCP deep context provider is not wired yet.
-3. E2B + Cursor Cloud hybrid sandbox drivers are not yet implemented.
-4. Artifact generation is represented as URIs, but capture/persistence tooling still needs implementation.
-
-### Next Ordered Milestones
-
-1. Add model router module with budget-aware routing (Opus/Codex/Mini).
-2. Implement Sentry MCP context enrichment pipeline before planning phase.
-3. Introduce sandbox orchestrator with E2B-first reproduction fallback.
-4. Implement verifier gates that enforce evidence artifacts.
-5. Add PR publishing stage with structured review packets.
+This bootstrap section captures the initial baseline assumptions at project start.
+Current implemented-vs-backlog status is maintained in `docs/implementation_status.md`, and milestone execution history is tracked in `docs/progress.md`.
 
 ## 2026-04-30 - Webhook Hardening (Path A)
 

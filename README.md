@@ -33,39 +33,38 @@ It ingests incidents (Sentry/GitHub), queues maintenance jobs with BullMQ, orche
 npm install
 ```
 
-2. Copy environment file:
+1. Copy environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-3. Fill required values in `.env`:
-   - `REDIS_URL`
-   - `SENTRY_WEBHOOK_SECRET`
-   - `SENTRY_HOOK_MAX_AGE_SECONDS` (defaults to 300)
-   - `CURSOR_API_KEY` (recommended for SDK-backed runs)
-   - `CURSOR_RUNTIME` (`local` or `cloud`)
-   - `CURSOR_CLOUD_REPO_URL` (required for cloud runtime)
-   - `SENTRY_CONTEXT_SOURCE` (`inline`, `fixture`, or `mcp`)
-   - `SENTRY_FIXTURE_PATH` (used when source is `fixture`)
-   - `SENTRY_MCP_SERVER` / `SENTRY_MCP_TOOL` (used when source is `mcp`)
-   - `SENTRY_PERSONAL_ACCESS_TOKEN` (required by `.cursor/mcp.json` if your Sentry MCP server uses token auth)
-   - `SENTRY_MCP_TIMEOUT_MS` / `SENTRY_MCP_MAX_RETRIES` (MCP resilience controls)
-   - `WEAVE_SINK_MODE` (`local` or `wandb`)
-   - `WEAVE_TRACE_LOG_PATH` (JSONL local trace log path)
-   - `WANDB_BASE_URL`, `WANDB_API_KEY`, `WANDB_ENTITY`, `WANDB_PROJECT` (required for `WEAVE_SINK_MODE=wandb`)
-   - `WEAVE_REMOTE_TIMEOUT_MS` (remote Weave sink timeout budget in ms)
-   - `E2B_API_KEY`, `E2B_REPRO_COMMAND`, `E2B_REPRO_TIMEOUT_MS` (E2B-first reproduction orchestration controls)
-   - `PR_PUBLISH_MODE`, `PR_REVIEW_PACKET_PATH`, `GITHUB_REPOSITORY`, `GITHUB_BASE_BRANCH`, `GITHUB_HEAD_BRANCH_PREFIX` (PR review packet publishing controls)
-
-4. Start Redis and run:
+1. Fill required values in `.env`:
+  - `REDIS_URL`
+  - `SENTRY_WEBHOOK_SECRET`
+  - `SENTRY_HOOK_MAX_AGE_SECONDS` (defaults to 300)
+  - `CURSOR_API_KEY` (recommended for SDK-backed runs)
+  - `CURSOR_RUNTIME` (`local` or `cloud`)
+  - `CURSOR_CLOUD_REPO_URL` (required for cloud runtime)
+  - `SENTRY_CONTEXT_SOURCE` (`inline`, `fixture`, or `mcp`)
+  - `SENTRY_FIXTURE_PATH` (used when source is `fixture`)
+  - `SENTRY_MCP_SERVER` / `SENTRY_MCP_TOOL` (used when source is `mcp`)
+  - `SENTRY_PERSONAL_ACCESS_TOKEN` (required by `.cursor/mcp.json` if your Sentry MCP server uses token auth)
+  - `SENTRY_MCP_TIMEOUT_MS` / `SENTRY_MCP_MAX_RETRIES` (MCP resilience controls)
+  - `WEAVE_SINK_MODE` (`local` or `wandb`)
+  - `WEAVE_TRACE_LOG_PATH` (JSONL local trace log path)
+  - `WANDB_BASE_URL`, `WANDB_API_KEY`, `WANDB_ENTITY`, `WANDB_PROJECT` (required for `WEAVE_SINK_MODE=wandb`)
+  - `WEAVE_REMOTE_TIMEOUT_MS` (remote Weave sink timeout budget in ms)
+  - `E2B_API_KEY`, `E2B_REPRO_COMMAND`, `E2B_REPRO_TIMEOUT_MS` (E2B-first reproduction orchestration controls)
+  - `PR_PUBLISH_MODE`, `PR_REVIEW_PACKET_PATH`, `GITHUB_REPOSITORY`, `GITHUB_BASE_BRANCH`, `GITHUB_HEAD_BRANCH_PREFIX` (PR review packet publishing controls)
+2. Start Redis and run:
 
 ```bash
 npm run dev:server
 npm run dev:worker
 ```
 
-5. Expose local webhook for Sentry:
+1. Expose local webhook for Sentry:
 
 ```bash
 ngrok http 3000
@@ -87,6 +86,7 @@ Every autonomous PR is expected to include:
 - execution evidence (test/lint output, and video for visual flows)
 
 Current scaffold enforces artifact presence for:
+
 - `artifacts/<traceId>/reasoning_log.md`
 - `artifacts/<traceId>/decision-log.json`
 - `artifacts/<traceId>/reproduction-log.json`
@@ -107,4 +107,7 @@ When `PR_PUBLISH_MODE=github`, the publisher attempts `gh pr create` for gate-ap
 
 - Product requirements: `docs/product_requirements.md`
 - Technical design: `docs/technical_design.md`
+- Implementation status (implemented vs backlog): `docs/implementation_status.md`
+- Chronological execution log: `docs/progress.md`
 - Living architecture log: `docs/architecture_journal.md`
+
