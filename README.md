@@ -46,6 +46,12 @@ cp .env.example .env
    - `CURSOR_API_KEY` (recommended for SDK-backed runs)
    - `CURSOR_RUNTIME` (`local` or `cloud`)
    - `CURSOR_CLOUD_REPO_URL` (required for cloud runtime)
+   - `SENTRY_CONTEXT_SOURCE` (`inline`, `fixture`, or `mcp`)
+   - `SENTRY_FIXTURE_PATH` (used when source is `fixture`)
+   - `SENTRY_MCP_SERVER` / `SENTRY_MCP_TOOL` (used when source is `mcp`)
+   - `SENTRY_PERSONAL_ACCESS_TOKEN` (required by `.cursor/mcp.json` if your Sentry MCP server uses token auth)
+   - `SENTRY_MCP_TIMEOUT_MS` / `SENTRY_MCP_MAX_RETRIES` (MCP resilience controls)
+   - `WEAVE_TRACE_LOG_PATH` (JSONL trace log path for agent action observability)
 
 4. Start Redis and run:
 

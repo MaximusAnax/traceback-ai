@@ -60,3 +60,32 @@
 - Added run envelope persistence under `artifacts/<traceId>/runs/<role>.json`.
 - Upgraded Surgeon to require structured JSON output and validate with `ChangeSetPacketSchema`.
 - Added robust JSON extraction utility for model responses containing surrounding text.
+
+## 2026-04-30 (Phase 4 - Context Ingestion)
+
+### Completed
+
+- Added pluggable Sentry context provider factory with source modes:
+  - `inline`
+  - `fixture`
+  - `mcp`
+- Added deterministic replay fixture at `fixtures/sentry/sample-incident.json`.
+- Wired Maestro to provider factory so discovery context source is environment-selectable.
+- Added in-process MCP stdio runtime bridge:
+  - Loads server command/args/env from `.cursor/mcp.json`
+  - Resolves `${ENV_VAR}` templates before launch
+  - Calls configured `SENTRY_MCP_TOOL` and parses structured output into `SentryContextEnvelope`
+- Added Phase 4.1 resilience hardening:
+  - Maestro now degrades gracefully to inline context if fixture/MCP provider fails.
+  - MCP tool calls now have timeout + retry controls (`SENTRY_MCP_TIMEOUT_MS`, `SENTRY_MCP_MAX_RETRIES`).
+- Added Weave-aligned action trace recording:
+  - JSONL event stream at `artifacts/weave-trace.jsonl` (configurable via `WEAVE_TRACE_LOG_PATH`)
+  - Events emitted for worker lifecycle, MCP context fetch, and Maestro/Surgeon/Verifier model runs.
+- Added MCP parser tests in `src/providers/sentry/sentry-mcp-parser.test.ts` covering:
+  - structuredContent path
+  - text JSON fallback path
+  - malformed response failure path
+
+### Blocker
+
+- None in code path; live pulls require valid Sentry MCP credentials/tool access at runtime.

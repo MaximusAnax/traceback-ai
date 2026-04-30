@@ -6,6 +6,7 @@ import { chooseModelForRole } from "./model-router.js";
 import { ChangeSetPacketSchema } from "../contracts/changeset-packet.js";
 import { extractJsonObject } from "../utils/json.js";
 import { persistRunEnvelope } from "../observability/cost-ledger.js";
+import { recordWeaveTraceEvent } from "../observability/weave.js";
 
 export const runSurgeon = async (
   job: MaintenanceJob,
@@ -35,6 +36,13 @@ export const runSurgeon = async (
   const knownLimitations: string[] = [];
   const routing = chooseModelForRole("surgeon", job);
   try {
+    await recordWeaveTraceEvent({
+      traceId: job.traceId,
+      role: "surgeon",
+      action: "run-cursor-prompt",
+      status: "started",
+      metadata: { modelId: routing.modelId },
+    });
     const runEnvelope = await runCursorPrompt({
       role: "surgeon",
       prompt,
@@ -43,6 +51,13 @@ export const runSurgeon = async (
       agentName: "TraceBack Surgeon",
     });
     await persistRunEnvelope(job.traceId, runEnvelope);
+    await recordWeaveTraceEvent({
+      traceId: job.traceId,
+      role: "surgeon",
+      action: "run-cursor-prompt",
+      status: "succeeded",
+      metadata: { outputChars: runEnvelope.outputText.length },
+    });
     const parsed = ChangeSetPacketSchema.parse(JSON.parse(extractJsonObject(runEnvelope.outputText)));
     diffSummary = parsed.diffSummary;
     filesModified = parsed.filesModified;
@@ -50,6 +65,13 @@ export const runSurgeon = async (
     testsAddedOrUpdated = parsed.testsAddedOrUpdated;
     knownLimitations.push(...parsed.knownLimitations);
   } catch (error) {
+    await recordWeaveTraceEvent({
+      traceId: job.traceId,
+      role: "surgeon",
+      action: "run-cursor-prompt",
+      status: "fallback",
+      metadata: { reason: error instanceof Error ? error.message : "unknown" },
+    });
     const reason = error instanceof Error ? error.message : "unknown Cursor SDK error";
     knownLimitations.push(`Cursor SDK execution fallback triggered: ${reason}`);
   }

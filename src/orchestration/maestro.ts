@@ -2,15 +2,48 @@ import { PlanPacket } from "../contracts/plan-packet.js";
 import { MaintenanceJob } from "../queue/jobs/maintenance-job.js";
 import { runCursorPrompt } from "./cursor-agent.js";
 import { chooseModelForRole } from "./model-router.js";
+import { createSentryContextProvider } from "../providers/sentry/sentry-context-provider.js";
 import { InlineSentryContextProvider } from "../providers/sentry/sentry-context-provider.js";
 import { PlanPacketSchema } from "../contracts/plan-packet.js";
 import { extractJsonObject } from "../utils/json.js";
 import { persistRunEnvelope } from "../observability/cost-ledger.js";
+import { logger } from "../utils/logger.js";
+import { recordWeaveTraceEvent } from "../observability/weave.js";
 
 export const runMaestro = async (job: MaintenanceJob): Promise<PlanPacket> => {
   const routing = chooseModelForRole("maestro", job);
-  const contextProvider = new InlineSentryContextProvider();
-  const context = await contextProvider.getContext(job);
+  const contextProvider = createSentryContextProvider();
+  let context = await new InlineSentryContextProvider().getContext(job);
+
+  await recordWeaveTraceEvent({
+    traceId: job.traceId,
+    role: "maestro",
+    action: "context-provider",
+    status: "started",
+    metadata: { source: "selected-provider" },
+  });
+  try {
+    context = await contextProvider.getContext(job);
+    await recordWeaveTraceEvent({
+      traceId: job.traceId,
+      role: "maestro",
+      action: "context-provider",
+      status: "succeeded",
+      metadata: { eventId: job.incident.eventId },
+    });
+  } catch (error) {
+    logger.warn(
+      { traceId: job.traceId, err: error, source: "sentry-context-provider" },
+      "context provider failed, using inline context fallback",
+    );
+    await recordWeaveTraceEvent({
+      traceId: job.traceId,
+      role: "maestro",
+      action: "context-provider",
+      status: "fallback",
+      metadata: { reason: error instanceof Error ? error.message : "unknown" },
+    });
+  }
 
   const fallback: PlanPacket = {
     incidentSummary: `${job.incident.title}: ${job.incident.message}`,
@@ -40,6 +73,13 @@ export const runMaestro = async (job: MaintenanceJob): Promise<PlanPacket> => {
   ].join("\n\n");
 
   try {
+    await recordWeaveTraceEvent({
+      traceId: job.traceId,
+      role: "maestro",
+      action: "run-cursor-prompt",
+      status: "started",
+      metadata: { modelId: routing.modelId },
+    });
     const runEnvelope = await runCursorPrompt({
       role: "maestro",
       prompt,
@@ -48,9 +88,23 @@ export const runMaestro = async (job: MaintenanceJob): Promise<PlanPacket> => {
       agentName: "TraceBack Maestro",
     });
     await persistRunEnvelope(job.traceId, runEnvelope);
+    await recordWeaveTraceEvent({
+      traceId: job.traceId,
+      role: "maestro",
+      action: "run-cursor-prompt",
+      status: "succeeded",
+      metadata: { outputChars: runEnvelope.outputText.length },
+    });
     const parsed = JSON.parse(extractJsonObject(runEnvelope.outputText));
     return PlanPacketSchema.parse(parsed);
-  } catch {
+  } catch (error) {
+    await recordWeaveTraceEvent({
+      traceId: job.traceId,
+      role: "maestro",
+      action: "run-cursor-prompt",
+      status: "fallback",
+      metadata: { reason: error instanceof Error ? error.message : "unknown" },
+    });
     return fallback;
   }
 };

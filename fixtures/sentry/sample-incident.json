@@ -1,0 +1,20 @@
+{
+  "provider": "sentry",
+  "eventId": "fixture-event-id",
+  "stacktrace": "src/services/order.ts#createOrder\nsrc/routes/order.ts#post",
+  "breadcrumbs": [
+    "user clicked submit order",
+    "api request started",
+    "uncaught exception thrown"
+  ],
+  "tags": {
+    "release": "fixture-release",
+    "environment": "development"
+  },
+  "repository": {
+    "owner": "traceback",
+    "name": "traceback",
+    "defaultBranch": "main"
+  },
+  "mcpReady": true
+}

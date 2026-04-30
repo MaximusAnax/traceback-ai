@@ -6,12 +6,20 @@ import { runMaestro } from "../../orchestration/maestro.js";
 import { runSurgeon } from "../../orchestration/surgeon.js";
 import { runVerifier } from "../../orchestration/verifier.js";
 import { recordEvidenceArtifacts } from "../../verification/artifact-recorder.js";
+import { recordWeaveTraceEvent } from "../../observability/weave.js";
 
 export const startMaintenanceWorker = (): Worker => {
   const worker = new Worker(
     "maintenance:ingest",
     async (job) => {
       const payload = MaintenanceJobSchema.parse(job.data);
+      await recordWeaveTraceEvent({
+        traceId: payload.traceId,
+        role: "worker",
+        action: "maintenance-job",
+        status: "started",
+        metadata: { eventId: payload.incident.eventId, queueJobId: job.id },
+      });
       logger.info({ traceId: payload.traceId, eventId: payload.incident.eventId }, "job received");
 
       const plan = await runMaestro(payload);
@@ -23,12 +31,30 @@ export const startMaintenanceWorker = (): Worker => {
         { traceId: payload.traceId, status: verification.gateStatus, artifacts: verification.artifactUris },
         "job processed",
       );
+      await recordWeaveTraceEvent({
+        traceId: payload.traceId,
+        role: "worker",
+        action: "maintenance-job",
+        status: "succeeded",
+        metadata: { gateStatus: verification.gateStatus },
+      });
       return { plan, changeSet, verification };
     },
     { connection: redisConnection, concurrency: 3 },
   );
 
   worker.on("failed", (job, err) => {
+    const maybeTraceId =
+      job && typeof job.data === "object" && job.data && "traceId" in job.data
+        ? String((job.data as { traceId?: unknown }).traceId ?? "unknown")
+        : "unknown";
+    void recordWeaveTraceEvent({
+      traceId: maybeTraceId,
+      role: "worker",
+      action: "maintenance-job",
+      status: "failed",
+      metadata: { jobId: job?.id, reason: err.message },
+    });
     logger.error({ jobId: job?.id, err }, "maintenance worker failed");
   });
 

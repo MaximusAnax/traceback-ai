@@ -6,6 +6,7 @@ import { chooseModelForRole } from "./model-router.js";
 import { runCursorPrompt } from "./cursor-agent.js";
 import { evaluateEvidenceGate } from "../verification/gate.js";
 import { persistRunEnvelope } from "../observability/cost-ledger.js";
+import { recordWeaveTraceEvent } from "../observability/weave.js";
 
 export const runVerifier = async (
   job: MaintenanceJob,
@@ -21,6 +22,13 @@ export const runVerifier = async (
 
   let testResult = "Verifier checks completed.";
   try {
+    await recordWeaveTraceEvent({
+      traceId: job.traceId,
+      role: "verifier",
+      action: "run-cursor-prompt",
+      status: "started",
+      metadata: { modelId: routing.modelId },
+    });
     const verifierPrompt = [
       "You are TraceBack Verifier. Return one concise sentence on verification confidence.",
       `Incident: ${job.incident.eventId}`,
@@ -37,8 +45,22 @@ export const runVerifier = async (
       agentName: "TraceBack Verifier",
     });
     await persistRunEnvelope(job.traceId, runEnvelope);
+    await recordWeaveTraceEvent({
+      traceId: job.traceId,
+      role: "verifier",
+      action: "run-cursor-prompt",
+      status: "succeeded",
+      metadata: { outputChars: runEnvelope.outputText.length },
+    });
     testResult = runEnvelope.outputText;
-  } catch {
+  } catch (error) {
+    await recordWeaveTraceEvent({
+      traceId: job.traceId,
+      role: "verifier",
+      action: "run-cursor-prompt",
+      status: "fallback",
+      metadata: { reason: error instanceof Error ? error.message : "unknown" },
+    });
     testResult = "Verifier fallback used due to SDK execution error.";
   }
 
