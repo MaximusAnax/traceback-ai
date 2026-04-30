@@ -50,3 +50,13 @@
   - `src/verification/artifact-recorder.ts`
   - `src/verification/gate.ts`
 - Worker now records reasoning/decision artifacts before verification gate execution.
+
+## 2026-04-30 (Phase 3)
+
+### Completed
+
+- Added runtime-selectable Cursor SDK driver path (`local` or `cloud`) with env control.
+- Added structured run envelope contract with run metadata and cost estimate.
+- Added run envelope persistence under `artifacts/<traceId>/runs/<role>.json`.
+- Upgraded Surgeon to require structured JSON output and validate with `ChangeSetPacketSchema`.
+- Added robust JSON extraction utility for model responses containing surrounding text.

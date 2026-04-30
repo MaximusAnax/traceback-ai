@@ -5,6 +5,7 @@ import { PlanPacket } from "../contracts/plan-packet.js";
 import { chooseModelForRole } from "./model-router.js";
 import { runCursorPrompt } from "./cursor-agent.js";
 import { evaluateEvidenceGate } from "../verification/gate.js";
+import { persistRunEnvelope } from "../observability/cost-ledger.js";
 
 export const runVerifier = async (
   job: MaintenanceJob,
@@ -28,12 +29,15 @@ export const runVerifier = async (
       `Artifacts present: ${gate.passed}`,
       `Artifact failures:\n- ${gate.failures.join("\n- ") || "none"}`,
     ].join("\n\n");
-    testResult = await runCursorPrompt({
+    const runEnvelope = await runCursorPrompt({
+      role: "verifier",
       prompt: verifierPrompt,
       modelId: routing.modelId,
       cwd: process.cwd(),
       agentName: "TraceBack Verifier",
     });
+    await persistRunEnvelope(job.traceId, runEnvelope);
+    testResult = runEnvelope.outputText;
   } catch {
     testResult = "Verifier fallback used due to SDK execution error.";
   }

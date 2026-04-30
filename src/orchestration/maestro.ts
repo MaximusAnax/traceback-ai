@@ -4,6 +4,8 @@ import { runCursorPrompt } from "./cursor-agent.js";
 import { chooseModelForRole } from "./model-router.js";
 import { InlineSentryContextProvider } from "../providers/sentry/sentry-context-provider.js";
 import { PlanPacketSchema } from "../contracts/plan-packet.js";
+import { extractJsonObject } from "../utils/json.js";
+import { persistRunEnvelope } from "../observability/cost-ledger.js";
 
 export const runMaestro = async (job: MaintenanceJob): Promise<PlanPacket> => {
   const routing = chooseModelForRole("maestro", job);
@@ -38,13 +40,15 @@ export const runMaestro = async (job: MaintenanceJob): Promise<PlanPacket> => {
   ].join("\n\n");
 
   try {
-    const raw = await runCursorPrompt({
+    const runEnvelope = await runCursorPrompt({
+      role: "maestro",
       prompt,
       modelId: routing.modelId,
       cwd: process.cwd(),
       agentName: "TraceBack Maestro",
     });
-    const parsed = JSON.parse(raw);
+    await persistRunEnvelope(job.traceId, runEnvelope);
+    const parsed = JSON.parse(extractJsonObject(runEnvelope.outputText));
     return PlanPacketSchema.parse(parsed);
   } catch {
     return fallback;

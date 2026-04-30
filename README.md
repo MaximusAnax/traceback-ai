@@ -14,6 +14,7 @@ It ingests incidents (Sentry/GitHub), queues maintenance jobs with BullMQ, orche
 - Buildable TypeScript CLI (`server` and `worker` modes)
 - Budget-aware model routing for Maestro/Surgeon/Verifier
 - Evidence artifact generation + verification gate enforcement
+- Run envelope persistence for trace/cost metadata per agent role
 
 ## Stack
 
@@ -43,6 +44,8 @@ cp .env.example .env
    - `SENTRY_WEBHOOK_SECRET`
    - `SENTRY_HOOK_MAX_AGE_SECONDS` (defaults to 300)
    - `CURSOR_API_KEY` (recommended for SDK-backed runs)
+   - `CURSOR_RUNTIME` (`local` or `cloud`)
+   - `CURSOR_CLOUD_REPO_URL` (required for cloud runtime)
 
 4. Start Redis and run:
 
@@ -75,6 +78,7 @@ Every autonomous PR is expected to include:
 Current scaffold enforces artifact presence for:
 - `artifacts/<traceId>/reasoning_log.md`
 - `artifacts/<traceId>/decision-log.json`
+- `artifacts/<traceId>/runs/{maestro|surgeon|verifier}.json`
 
 ## Open-Core Boundary
 
