@@ -1,6 +1,6 @@
 # TraceBack Implementation Status
 
-Last updated: 2026-04-30
+Last updated: 2026-05-12
 
 This document tracks implementation coverage against the guiding specs:
 
@@ -18,18 +18,17 @@ Status legend:
 ### Programmatic orchestration (`@cursor/sdk`)
 
 - `implemented` - Cursor SDK headless runs are used by orchestration roles through `src/orchestration/cursor-agent.ts`.
-- `backlog` - Subagent multitasking (`/multitask` protocol) is not yet wired into runtime orchestration.
+- `implemented` - Bounded depth-1 `/multitask`-style subagent task/result packets are wired into Maestro/Surgeon orchestration.
 
 ### Evidence-driven verification
 
-- `partial` - Decision logs and verification artifacts are generated and gated.
-- `backlog` - Video demo artifact generation is not implemented.
-- `backlog` - Visual regression via integrated VM browser is not implemented in verifier flow.
+- `implemented` - Decision logs, reproduction logs, rule audit, visual-regression, and video-demo artifacts are generated and gated.
+- `partial` - Video demo and visual regression currently use Playwright MCP/Cursor Cloud when configured and deterministic skip artifacts otherwise.
 
 ### MCP tooling and integration
 
 - `implemented` - Sentry MCP context ingestion is wired with runtime bridge, retries/timeouts, and fallback.
-- `backlog` - Playwright MCP (external docs/wiki navigation) is not integrated.
+- `implemented` - Playwright MCP adapter hooks exist for visual verification and external knowledge lookup.
 
 ### Resource-optimized model roles
 
@@ -40,23 +39,23 @@ Status legend:
 ### Async maintenance pipeline
 
 - `implemented` - Fastify webhook producer, BullMQ queue, Redis worker loop are in place.
-- `partial` - Sentry ingestion is implemented; GitHub webhook ingestion path is not yet implemented.
+- `implemented` - Sentry and GitHub webhook ingestion paths normalize into `MaintenanceJob`.
 
 ### Hybrid sandbox strategy (E2B + Cursor Cloud)
 
 - `partial` - Reproduction orchestrator uses E2B-first and Cursor Cloud fallback strategy.
-- `partial` - E2B path is command-driven (`E2B_REPRO_COMMAND`), not yet a direct E2B SDK integration.
-- `backlog` - Integrated browser-based visual verification in cloud runtime is not yet implemented.
+- `implemented` - E2B path uses a direct optional SDK adapter and injects reproduction context into sandbox execution.
+- `partial` - Integrated browser verification is adapter-backed and requires Cursor Cloud + Playwright MCP configuration for live capture.
 
 ### SDK wrapper agent loop
 
 - `implemented` - SDK wrapper pattern is used for role runs (`Agent.create` + `send` + result envelope persistence).
-- `partial` - Audit pass against rules exists by policy and prompts, but no explicit dedicated rule-audit stage yet.
+- `implemented` - Dedicated rule-audit stage emits `rule-audit.json` and feeds verifier/review packet risk data.
 
 ### Open-source vs SaaS boundary
 
 - `implemented` - OSS core behavior is present: CLI, queue/orchestration, artifacts, BYOK config.
-- `backlog` - SaaS governance features (OIDC/SCIM identity binding, enterprise action signing, hosted comprehension dashboard) are not implemented in this repo.
+- `partial` - SaaS governance scaffolding exists in this repo with identity/storage/audit adapters and review-packet dashboard routes; full OIDC/SCIM provider integrations remain adapter-level follow-up work.
 
 ## 3) Implemented Milestones Snapshot
 
@@ -67,14 +66,16 @@ Status legend:
 - E2B-first reproduction orchestration with Cursor Cloud fallback.
 - Evidence gate with per-artifact checks.
 - Structured review packet publishing.
-- Optional mode-gated `gh pr create` side effects and publish-result tracking.
+- Optional mode-gated branch/commit/`gh pr create` side effects and publish-result tracking.
+- GitHub webhook ingestion producer path.
+- Bounded subagent orchestration packets.
+- Rule-audit and visual-evidence verification stages.
+- SaaS governance adapters and review-packet dashboard routes.
 
 ## 4) Backlog (Prioritized)
 
-1. Add runtime subagent multitasking for complex fixes.
-2. Implement video demo artifact capture in verification flow.
-3. Add browser-based visual regression verification in cloud runtime.
-4. Integrate Playwright MCP for external knowledge workflows.
-5. Add GitHub webhook ingestion producer path.
-6. Replace command-based E2B path with direct E2B SDK/tool integration.
-7. Add SaaS governance layer items (identity binding, hosted comprehension artifacts).
+1. Exercise live Cursor Cloud + Playwright MCP visual capture against a real frontend fixture.
+2. Validate the optional E2B SDK adapter against the installed production E2B package/API.
+3. Add full OIDC token verification and SCIM protocol endpoints behind the governance adapters.
+4. Add hosted artifact storage adapter for SaaS deployments.
+5. Add end-to-end dry-run worker integration with mocked Cursor/E2B/GitHub side effects.

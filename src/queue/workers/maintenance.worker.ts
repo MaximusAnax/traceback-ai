@@ -9,6 +9,8 @@ import { recordEvidenceArtifacts } from "../../verification/artifact-recorder.js
 import { recordWeaveTraceEvent } from "../../observability/weave.js";
 import { runReproductionOrchestrator } from "../../sandbox/reproduction-orchestrator.js";
 import { publishReviewPacket } from "../../publishing/review-publisher.js";
+import { runRuleAudit } from "../../verification/rule-audit.js";
+import { recordVisualEvidence } from "../../verification/visual-evidence.js";
 
 export const startMaintenanceWorker = (): Worker => {
   const worker = new Worker(
@@ -27,14 +29,28 @@ export const startMaintenanceWorker = (): Worker => {
       const reproduction = await runReproductionOrchestrator(payload);
       const plan = await runMaestro(payload, reproduction);
       const changeSet = await runSurgeon(payload, plan);
-      await recordEvidenceArtifacts({ job: payload, plan, changeSet, reproduction });
-      const verification = await runVerifier(payload, plan, changeSet);
+      const evidence = await recordEvidenceArtifacts({ job: payload, plan, changeSet, reproduction });
+      const visualEvidence = await recordVisualEvidence({ job: payload, changeSet });
+      const ruleAudit = await runRuleAudit({
+        job: payload,
+        changeSet,
+        artifactUris: [
+          evidence.reasoningLogPath,
+          evidence.decisionLogPath,
+          evidence.reproductionLogPath,
+          visualEvidence.videoDemoUri,
+          visualEvidence.visualRegressionUri,
+        ],
+      });
+      const verification = await runVerifier(payload, plan, changeSet, ruleAudit, visualEvidence);
       const review = await publishReviewPacket({
         job: payload,
         reproduction,
         plan,
         changeSet,
         verification,
+        ruleAudit,
+        visualEvidence,
       });
 
       logger.info(

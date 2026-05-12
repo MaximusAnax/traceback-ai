@@ -2,6 +2,31 @@
 
 This document is the project memory for architecture decisions, sequencing, and constraints. Update it whenever a decision impacts system shape, runtime behavior, or cost profile.
 
+## 2026-05-12 - OSS Core Completion + SaaS Governance Scaffold
+
+### Decisions
+
+1. Deliver OSS Core first while keeping SaaS governance in the same repository.
+2. Keep SaaS providers vendor-neutral behind identity, storage, audit, and SCIM-style adapters.
+3. Represent Cursor `/multitask` support as bounded depth-1 subagent task/result packets passed through Maestro and Surgeon.
+4. Treat browser/video verification as first-class evidence artifacts; when Cursor Cloud or Playwright MCP is unavailable, emit deterministic SKIP artifacts rather than failing the worker.
+5. Gate GitHub publish side effects behind `PR_PUBLISH_MODE=github`.
+
+### Implementation
+
+- Added GitHub webhook ingestion beside Sentry with raw-body HMAC verification.
+- Extended maintenance contracts with source, priority, provider metadata, subagent, visual evidence, rule audit, and governance audit packets.
+- Added optional direct E2B sandbox adapter path and kept reproduction non-fatal.
+- Added rule-audit and visual-evidence stages into the worker before verifier/publisher.
+- Added Playwright MCP integration hooks for visual verification and docs lookup.
+- Added SaaS review packet routes with signed local audit events.
+
+### Operational Notes
+
+- Live visual evidence requires `CURSOR_RUNTIME=cloud` plus Playwright MCP server/tool configuration.
+- Live E2B reproduction requires `E2B_API_KEY`, a compatible installed E2B SDK package, and `E2B_REPRO_COMMAND`.
+- `npm run doctor` reports local capability readiness without executing maintenance work.
+
 ## 2026-04-30 - Bootstrap Baseline
 
 ### Decisions

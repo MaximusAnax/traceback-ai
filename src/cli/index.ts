@@ -3,6 +3,7 @@ import { logger } from "../utils/logger.js";
 import { buildServer } from "../server/fastify.js";
 import { startMaintenanceWorker } from "../queue/workers/maintenance.worker.js";
 import { redisConnection } from "../queue/connection.js";
+import { runCapabilityChecks } from "./capabilities.js";
 
 const mode = process.argv[2];
 
@@ -20,7 +21,17 @@ const main = async (): Promise<void> => {
     return;
   }
 
-  logger.info("usage: tsx src/cli/index.ts [server|worker]");
+  if (mode === "doctor") {
+    const checks = await runCapabilityChecks();
+    for (const check of checks) {
+      logger.info({ status: check.status, detail: check.detail }, `capability: ${check.name}`);
+    }
+    await redisConnection.quit();
+    process.exitCode = checks.some((check) => check.status === "FAIL") ? 1 : 0;
+    return;
+  }
+
+  logger.info("usage: tsx src/cli/index.ts [server|worker|doctor]");
   await redisConnection.quit();
   process.exitCode = 1;
 };

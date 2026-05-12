@@ -4,6 +4,8 @@ import { PlanPacketSchema } from "./plan-packet.js";
 import { ChangeSetPacketSchema } from "./changeset-packet.js";
 import { VerificationPacketSchema } from "./verification-packet.js";
 import { ReproductionPacketSchema } from "./reproduction-packet.js";
+import { RuleAuditPacketSchema } from "./rule-audit-packet.js";
+import { VisualEvidencePacketSchema } from "./visual-evidence-packet.js";
 
 export const ReviewPacketPayloadSchema = z.object({
   incident: z.object({
@@ -19,6 +21,8 @@ export const ReviewPacketPayloadSchema = z.object({
   reproduction: ReproductionPacketSchema.optional(),
   plan: PlanPacketSchema,
   changeSet: ChangeSetPacketSchema,
+  ruleAudit: RuleAuditPacketSchema.optional(),
+  visualEvidence: VisualEvidencePacketSchema.optional(),
   verification: VerificationPacketSchema,
   publish: z.object({
     mode: z.enum(["disabled", "dry-run", "github"]),

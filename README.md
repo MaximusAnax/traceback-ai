@@ -7,6 +7,7 @@ It ingests incidents (Sentry/GitHub), queues maintenance jobs with BullMQ, orche
 ## Current Scope
 
 - Fastify webhook ingestion (`/webhooks/sentry`)
+- GitHub webhook ingestion (`/webhooks/github`)
 - BullMQ + Redis async pipeline
 - Typed contracts with Zod for all critical payloads
 - Surgeon path wired to `@cursor/sdk`
@@ -15,6 +16,11 @@ It ingests incidents (Sentry/GitHub), queues maintenance jobs with BullMQ, orche
 - Budget-aware model routing for Maestro/Surgeon/Verifier
 - Evidence artifact generation + verification gate enforcement
 - Run envelope persistence for trace/cost metadata per agent role
+- Cursor `/multitask`-style bounded subagent task packets
+- Direct E2B sandbox adapter path for reproduction
+- Playwright MCP visual evidence adapter with deterministic skip artifacts
+- Rule audit artifact generation against `.cursor/rules/*.mdc`
+- SaaS governance scaffolding: local artifact dashboard routes, identity adapter, signed audit events
 
 ## Stack
 
@@ -49,14 +55,18 @@ cp .env.example .env
   - `SENTRY_CONTEXT_SOURCE` (`inline`, `fixture`, or `mcp`)
   - `SENTRY_FIXTURE_PATH` (used when source is `fixture`)
   - `SENTRY_MCP_SERVER` / `SENTRY_MCP_TOOL` (used when source is `mcp`)
+  - `GITHUB_WEBHOOK_SECRET` (used by `/webhooks/github`)
+  - `PLAYWRIGHT_MCP_SERVER`, `PLAYWRIGHT_MCP_VISUAL_TOOL`, `PLAYWRIGHT_MCP_DOCS_TOOL`
   - `SENTRY_PERSONAL_ACCESS_TOKEN` (required by `.cursor/mcp.json` if your Sentry MCP server uses token auth)
   - `SENTRY_MCP_TIMEOUT_MS` / `SENTRY_MCP_MAX_RETRIES` (MCP resilience controls)
   - `WEAVE_SINK_MODE` (`local` or `wandb`)
   - `WEAVE_TRACE_LOG_PATH` (JSONL local trace log path)
   - `WANDB_BASE_URL`, `WANDB_API_KEY`, `WANDB_ENTITY`, `WANDB_PROJECT` (required for `WEAVE_SINK_MODE=wandb`)
   - `WEAVE_REMOTE_TIMEOUT_MS` (remote Weave sink timeout budget in ms)
-  - `E2B_API_KEY`, `E2B_REPRO_COMMAND`, `E2B_REPRO_TIMEOUT_MS` (E2B-first reproduction orchestration controls)
+  - `E2B_API_KEY`, `E2B_REPRO_COMMAND`, `E2B_TEMPLATE_ID`, `E2B_REPRO_TIMEOUT_MS` (E2B-first reproduction orchestration controls)
   - `PR_PUBLISH_MODE`, `PR_REVIEW_PACKET_PATH`, `GITHUB_REPOSITORY`, `GITHUB_BASE_BRANCH`, `GITHUB_HEAD_BRANCH_PREFIX` (PR review packet publishing controls)
+  - `TRACEBACK_ARTIFACTS_ROOT`
+  - `SAAS_STORAGE_MODE`, `SAAS_AUDIT_SIGNING_SECRET`, `SAAS_OIDC_ISSUER`, `SAAS_OIDC_AUDIENCE`, `SAAS_SCIM_TOKEN`
 2. Start Redis and run:
 
 ```bash
@@ -76,6 +86,7 @@ Use `https://<ngrok-domain>/webhooks/sentry` in Sentry integration settings.
 
 - `npm run dev:server`: starts Fastify webhook producer
 - `npm run dev:worker`: starts BullMQ maintenance worker
+- `npm run doctor`: checks Redis, Cursor, MCP, E2B, GitHub CLI, and artifact write capability
 
 ## Verification Standard
 
@@ -90,6 +101,9 @@ Current scaffold enforces artifact presence for:
 - `artifacts/<traceId>/reasoning_log.md`
 - `artifacts/<traceId>/decision-log.json`
 - `artifacts/<traceId>/reproduction-log.json`
+- `artifacts/<traceId>/rule-audit.json`
+- `artifacts/<traceId>/video-demo.json`
+- `artifacts/<traceId>/visual-regression.json`
 - `artifacts/<traceId>/runs/{maestro|surgeon|verifier}.json`
 
 Verifier output now includes per-artifact gate checks in addition to PASS/FAIL status, so reviewers can quickly see which required artifacts were present or missing.
@@ -97,6 +111,15 @@ Verifier output now includes per-artifact gate checks in addition to PASS/FAIL s
 The worker now emits a structured review packet artifact at `artifacts/<traceId>/review-packet.json` (path configurable), containing incident, reproduction, plan, change set, verification, and PR recommendation metadata.
 
 When `PR_PUBLISH_MODE=github`, the publisher attempts `gh pr create` for gate-approved fixes and records publish result metadata (`created`, `failed`, or `skipped`) in the review packet.
+
+## SaaS Governance Routes
+
+The same Fastify server exposes an initial governance surface:
+
+- `GET /saas/review-packets`: list review packets for the comprehension dashboard.
+- `GET /saas/review-packets/:traceId`: retrieve the full review packet.
+
+Routes use the identity adapter and append signed audit events to `artifacts/saas-audit.jsonl`.
 
 ## Open-Core Boundary
 
@@ -110,4 +133,3 @@ When `PR_PUBLISH_MODE=github`, the publisher attempts `gh pr create` for gate-ap
 - Implementation status (implemented vs backlog): `docs/implementation_status.md`
 - Chronological execution log: `docs/progress.md`
 - Living architecture log: `docs/architecture_journal.md`
-

@@ -1,5 +1,3 @@
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
 import { env } from "../config/env.js";
 import { MaintenanceJob } from "../queue/jobs/maintenance-job.js";
 import {
@@ -11,7 +9,62 @@ import { runCursorPrompt } from "../orchestration/cursor-agent.js";
 import { chooseModelForRole } from "../orchestration/model-router.js";
 import { recordWeaveTraceEvent } from "../observability/weave.js";
 
-const execAsync = promisify(exec);
+type E2BSandboxLike = {
+  sandboxId?: string;
+  id?: string;
+  commands?: {
+    run?: (command: string, options?: Record<string, unknown>) => Promise<unknown>;
+  };
+  runCode?: (code: string, options?: Record<string, unknown>) => Promise<unknown>;
+  kill?: () => Promise<void>;
+  close?: () => Promise<void>;
+};
+
+const dynamicImport = new Function("specifier", "return import(specifier)") as (
+  specifier: string,
+) => Promise<Record<string, unknown>>;
+
+const createE2BSandbox = async (): Promise<E2BSandboxLike> => {
+  const imported = await dynamicImport("e2b");
+  const maybeSandbox =
+    imported.Sandbox ??
+    (typeof imported.default === "object" && imported.default !== null
+      ? (imported.default as Record<string, unknown>).Sandbox
+      : undefined);
+  if (!maybeSandbox || typeof maybeSandbox !== "function") {
+    throw new Error("The e2b package did not expose a Sandbox constructor.");
+  }
+
+  const Sandbox = maybeSandbox as {
+    create?: (options?: Record<string, unknown>) => Promise<E2BSandboxLike>;
+    new (options?: Record<string, unknown>): E2BSandboxLike;
+  };
+  const options = {
+    apiKey: env.E2B_API_KEY,
+    template: env.E2B_TEMPLATE_ID,
+    timeoutMs: env.E2B_REPRO_TIMEOUT_MS,
+  };
+  if (typeof Sandbox.create === "function") return Sandbox.create(options);
+  return new Sandbox(options);
+};
+
+const stringifyE2BResult = (result: unknown): string => {
+  if (typeof result === "string") return result;
+  if (typeof result === "object" && result !== null) return JSON.stringify(result);
+  return String(result);
+};
+
+const terminateE2BSandbox = async (sandbox: E2BSandboxLike): Promise<boolean> => {
+  if (typeof sandbox.kill === "function") {
+    await sandbox.kill();
+    return true;
+  }
+  if (typeof sandbox.close === "function") {
+    await sandbox.close();
+    return true;
+  }
+  return false;
+};
 
 const attemptE2BReproduction = async (job: MaintenanceJob) => {
   if (!env.E2B_API_KEY) {
@@ -32,35 +85,59 @@ const attemptE2BReproduction = async (job: MaintenanceJob) => {
     });
   }
 
+  const startedAt = Date.now();
+  let sandbox: E2BSandboxLike | undefined;
+  let terminated = false;
   try {
-    const { stdout, stderr } = await execAsync(env.E2B_REPRO_COMMAND, {
-      timeout: env.E2B_REPRO_TIMEOUT_MS,
-      env: {
-        ...process.env,
-        E2B_API_KEY: env.E2B_API_KEY,
-        TRACEBACK_TRACE_ID: job.traceId,
-        TRACEBACK_EVENT_ID: job.incident.eventId,
-        TRACEBACK_INCIDENT_JSON: JSON.stringify(job.incident),
-      },
-      cwd: process.cwd(),
-      maxBuffer: 1024 * 1024,
-    });
-
-    const details = [stdout.trim(), stderr.trim()].filter(Boolean);
+    sandbox = await createE2BSandbox();
+    const incidentJson = JSON.stringify(job.incident).replaceAll("'", "'\\''");
+    const envPrefix = [
+      `TRACEBACK_TRACE_ID='${job.traceId}'`,
+      `TRACEBACK_EVENT_ID='${job.incident.eventId}'`,
+      `TRACEBACK_INCIDENT_JSON='${incidentJson}'`,
+    ].join(" ");
+    const command = `${envPrefix} ${env.E2B_REPRO_COMMAND}`;
+    const result =
+      typeof sandbox.commands?.run === "function"
+        ? await sandbox.commands.run(command, { timeoutMs: env.E2B_REPRO_TIMEOUT_MS })
+        : await sandbox.runCode?.(command, { timeoutMs: env.E2B_REPRO_TIMEOUT_MS });
+    const details = result ? [stringifyE2BResult(result)] : ["E2B reproduction command completed."];
+    terminated = await terminateE2BSandbox(sandbox);
     return ReproductionAttemptSchema.parse({
       driver: "e2b",
       status: "PASS",
-      summary: "E2B reproduction command completed successfully.",
+      summary: "E2B sandbox reproduction completed successfully.",
       details,
+      sandboxId: sandbox.sandboxId ?? sandbox.id,
+      durationMs: Date.now() - startedAt,
+      terminated,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown E2B reproduction error";
+    if (sandbox) {
+      try {
+        terminated = await terminateE2BSandbox(sandbox);
+      } catch {
+        terminated = false;
+      }
+    }
     return ReproductionAttemptSchema.parse({
       driver: "e2b",
       status: "FAIL",
-      summary: "E2B reproduction attempt failed.",
+      summary: "E2B sandbox reproduction attempt failed.",
       details: [message],
+      sandboxId: sandbox?.sandboxId ?? sandbox?.id,
+      durationMs: Date.now() - startedAt,
+      terminated,
     });
+  } finally {
+    if (sandbox && !terminated) {
+      try {
+        terminated = await terminateE2BSandbox(sandbox);
+      } catch {
+        terminated = false;
+      }
+    }
   }
 };
 

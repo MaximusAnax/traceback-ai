@@ -1,6 +1,8 @@
 import Fastify from "fastify";
 import fastifyRawBody from "fastify-raw-body";
 import { registerSentryWebhook } from "./routes/sentry-webhook.js";
+import { registerGitHubWebhook } from "./routes/github-webhook.js";
+import { registerSaasDashboardRoutes } from "../saas/dashboard-routes.js";
 import { logger } from "../utils/logger.js";
 
 export const buildServer = async () => {
@@ -13,6 +15,8 @@ export const buildServer = async () => {
   });
   app.get("/healthz", async () => ({ ok: true }));
   await registerSentryWebhook(app);
+  await registerGitHubWebhook(app);
+  await registerSaasDashboardRoutes(app);
 
   app.setErrorHandler((error, _request, reply) => {
     logger.error({ err: error }, "request failed");

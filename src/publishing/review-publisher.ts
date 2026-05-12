@@ -10,6 +10,8 @@ import { ChangeSetPacket } from "../contracts/changeset-packet.js";
 import { VerificationPacket } from "../contracts/verification-packet.js";
 import { ReviewPacketEnvelopeSchema } from "../contracts/review-packet.js";
 import { recordWeaveTraceEvent } from "../observability/weave.js";
+import { RuleAuditPacket } from "../contracts/rule-audit-packet.js";
+import { VisualEvidencePacket } from "../contracts/visual-evidence-packet.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -24,6 +26,8 @@ export const publishReviewPacket = async (args: {
   plan: PlanPacket;
   changeSet: ChangeSetPacket;
   verification: VerificationPacket;
+  ruleAudit?: RuleAuditPacket;
+  visualEvidence?: VisualEvidencePacket;
 }): Promise<{
   path: string;
   recommendation: "open-pr" | "hold";
@@ -42,7 +46,7 @@ export const publishReviewPacket = async (args: {
       publishReason = "GITHUB_REPOSITORY is required for PR_PUBLISH_MODE=github.";
     } else {
       try {
-        const title = `fix: resolve Sentry incident ${args.job.incident.eventId}`;
+        const title = `fix: resolve ${args.job.incident.provider} incident ${args.job.incident.eventId}`;
         const body = [
           "## Summary",
           `- Incident: ${args.job.incident.eventId} (${args.job.incident.severity})`,
@@ -52,10 +56,21 @@ export const publishReviewPacket = async (args: {
           "## Verification",
           `- Gate status: ${args.verification.gateStatus}`,
           `- Required artifacts checked: ${args.verification.gateChecks.length}`,
+          `- Rule audit: ${args.ruleAudit?.status ?? "not-run"}`,
+          `- Visual evidence: ${args.visualEvidence?.status ?? "not-run"}`,
           "",
           "## TraceBack Review Packet",
           `- Trace ID: ${args.job.traceId}`,
         ].join("\n");
+        await execFileAsync("git", ["checkout", "-B", headBranch]);
+        await execFileAsync("git", ["add", "-A"]);
+        await execFileAsync("git", [
+          "commit",
+          "-m",
+          `fix: resolve ${args.job.incident.provider} incident ${args.job.incident.eventId}`,
+          "--allow-empty",
+        ]);
+        await execFileAsync("git", ["push", "--set-upstream", "origin", headBranch]);
         const { stdout } = await execFileAsync("gh", [
           "pr",
           "create",
@@ -103,6 +118,8 @@ export const publishReviewPacket = async (args: {
       reproduction: args.reproduction,
       plan: args.plan,
       changeSet: args.changeSet,
+      ruleAudit: args.ruleAudit,
+      visualEvidence: args.visualEvidence,
       verification: args.verification,
       publish: {
         mode: env.PR_PUBLISH_MODE,

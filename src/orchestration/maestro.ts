@@ -62,12 +62,31 @@ export const runMaestro = async (
       "Emit reasoning_log.md and decision-log.json artifacts.",
     ],
     riskFlags: job.incident.severity === "critical" ? ["critical-incident"] : [],
+    subagentTasks:
+      job.incident.severity === "critical"
+        ? [
+            {
+              id: "logic-fix",
+              role: "logic",
+              objective: "Patch the suspected runtime failure with minimal edits.",
+              filesOfInterest: [job.incident.culprit],
+              constraints: ["depth-limit:1", "do not edit configuration secrets"],
+            },
+            {
+              id: "regression-tests",
+              role: "tests",
+              objective: "Add or update focused regression coverage for the incident.",
+              filesOfInterest: [job.incident.culprit],
+              constraints: ["depth-limit:1", "keep tests deterministic"],
+            },
+          ]
+        : [],
     budgetLimits: { maxTokens: routing.maxTokens, maxUsd: routing.maxUsd },
   };
 
   const prompt = [
     "You are TraceBack Maestro. Produce a concise JSON object only.",
-    `Use this schema keys: incidentSummary, rootCauseHypotheses, filesOfInterest, proposedChanges, verificationPlan, riskFlags, budgetLimits.`,
+    `Use this schema keys: incidentSummary, rootCauseHypotheses, filesOfInterest, proposedChanges, verificationPlan, riskFlags, subagentTasks, budgetLimits.`,
     `Incident event id: ${job.incident.eventId}`,
     `Severity: ${job.incident.severity}`,
     `Reproduction status: ${reproduction?.status ?? "SKIP"}`,
@@ -76,6 +95,7 @@ export const runMaestro = async (
     `Stacktrace:\n${context.stacktrace}`,
     `Breadcrumbs:\n- ${context.breadcrumbs.join("\n- ") || "none"}`,
     `Constraints: minimal edits, include evidence-driven verification steps.`,
+    `If the fix is complex, include at most two subagentTasks using roles logic/tests/verification/docs. Depth limit is always 1.`,
   ].join("\n\n");
 
   try {

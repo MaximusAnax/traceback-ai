@@ -5,6 +5,32 @@
 - Canonical coverage status now lives in `docs/implementation_status.md`.
 - This file remains the chronological execution log of implementation waves and phases.
 
+## 2026-05-12
+
+### Completed
+
+- Fixed the TypeScript test runner under ESM by switching `npm test` to `node --import tsx --test`.
+- Updated default Surgeon model to the PRD target `gpt-5.4-codex` with SDK fallback to `gpt-5.3-codex`.
+- Extended contracts for GitHub incidents, source metadata, priority metadata, subagent tasks/results, visual evidence, rule audits, and governance audit events.
+- Added `/webhooks/github` with GitHub HMAC verification and normalized queue jobs.
+- Added bounded `/multitask`-style Maestro/Surgeon subagent packets with depth limit 1.
+- Replaced local command-style E2B reproduction with an optional direct E2B SDK adapter.
+- Added rule-audit and visual-evidence stages before verification.
+- Added Playwright MCP adapter hooks for visual verification and external knowledge lookup.
+- Expanded verifier and review packet payloads to include rule audit and visual evidence.
+- Added `npm run doctor` capability checks.
+- Added same-repo SaaS governance scaffolding: local artifact storage, identity adapter, signed audit adapter, and review packet dashboard routes.
+- Added focused unit coverage for contracts, governance, rule audit, visual skip artifacts, publishing, reproduction skip, gates, MCP parsing, and Weave sink behavior.
+
+### Verification
+
+- `npm run lint` passes.
+- `npm test` passes with 14 tests.
+
+### Follow-Up
+
+- Live provider validation is still required for Cursor Cloud browser capture, Playwright MCP tools, and the production E2B SDK package/API.
+
 ## 2026-04-30
 
 ### Completed
@@ -206,4 +232,3 @@
 ### Blocker
 
 - Successful `gh pr create` execution requires pre-existing head branch and authenticated GitHub CLI context at runtime.
-

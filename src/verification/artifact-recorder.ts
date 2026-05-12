@@ -4,6 +4,7 @@ import { MaintenanceJob } from "../queue/jobs/maintenance-job.js";
 import { PlanPacket } from "../contracts/plan-packet.js";
 import { ChangeSetPacket } from "../contracts/changeset-packet.js";
 import { ReproductionPacket } from "../contracts/reproduction-packet.js";
+import { env } from "../config/env.js";
 
 export type EvidenceArtifacts = {
   reasoningLogPath: string;
@@ -11,7 +12,7 @@ export type EvidenceArtifacts = {
   reproductionLogPath: string;
 };
 
-const artifactsRoot = path.resolve(process.cwd(), "artifacts");
+const artifactsRoot = path.resolve(process.cwd(), env.TRACEBACK_ARTIFACTS_ROOT);
 
 export const recordEvidenceArtifacts = async (args: {
   job: MaintenanceJob;

@@ -104,12 +104,29 @@ export const registerSentryWebhook = async (app: FastifyInstance): Promise<void>
         },
         severity: sentryLevelToSeverity(payload.level),
         receivedAt: new Date().toISOString(),
+        providerMetadata: { release: payload.release },
+      },
+      source: {
+        provider: "sentry" as const,
+        webhookEvent:
+          typeof request.headers["x-sentry-hook-resource"] === "string"
+            ? request.headers["x-sentry-hook-resource"]
+            : "event",
+        deliveryId:
+          typeof request.headers["x-sentry-hook-id"] === "string"
+            ? request.headers["x-sentry-hook-id"]
+            : undefined,
+        receivedAt: new Date().toISOString(),
+      },
+      priority: {
+        value: sentryLevelToSeverity(payload.level) === "critical" ? 1 : 5,
+        reason: `Sentry ${payload.level} event normalized for maintenance.`,
       },
     };
 
     await ingestQueue.add("maintenance", queueJob, {
       jobId: buildMaintenanceJobId(payload.event_id, payload.fingerprint),
-      priority: queueJob.incident.severity === "critical" ? 1 : 5,
+      priority: queueJob.priority.value,
     });
 
     return reply.code(202).send({ accepted: true, traceId });

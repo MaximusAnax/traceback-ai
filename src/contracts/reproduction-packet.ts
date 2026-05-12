@@ -5,6 +5,9 @@ export const ReproductionAttemptSchema = z.object({
   status: z.enum(["PASS", "FAIL", "SKIP"]),
   summary: z.string().min(1),
   details: z.array(z.string()).default([]),
+  sandboxId: z.string().optional(),
+  durationMs: z.number().int().nonnegative().optional(),
+  terminated: z.boolean().optional(),
 });
 
 export const ReproductionPacketSchema = z.object({

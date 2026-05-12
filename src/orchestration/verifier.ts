@@ -7,19 +7,35 @@ import { runCursorPrompt } from "./cursor-agent.js";
 import { evaluateEvidenceGate } from "../verification/gate.js";
 import { persistRunEnvelope } from "../observability/cost-ledger.js";
 import { recordWeaveTraceEvent } from "../observability/weave.js";
+import { RuleAuditPacket } from "../contracts/rule-audit-packet.js";
+import { VisualEvidencePacket } from "../contracts/visual-evidence-packet.js";
+import { env } from "../config/env.js";
 
 export const runVerifier = async (
   job: MaintenanceJob,
   plan: PlanPacket,
   changeSet: ChangeSetPacket,
+  ruleAudit?: RuleAuditPacket,
+  visualEvidence?: VisualEvidencePacket,
 ): Promise<VerificationPacket> => {
   const routing = chooseModelForRole("verifier", job);
   const artifactUris = [
-    `artifacts/${job.traceId}/reasoning_log.md`,
-    `artifacts/${job.traceId}/decision-log.json`,
-    `artifacts/${job.traceId}/reproduction-log.json`,
-  ];
+    `${env.TRACEBACK_ARTIFACTS_ROOT}/${job.traceId}/reasoning_log.md`,
+    `${env.TRACEBACK_ARTIFACTS_ROOT}/${job.traceId}/decision-log.json`,
+    `${env.TRACEBACK_ARTIFACTS_ROOT}/${job.traceId}/reproduction-log.json`,
+    `${env.TRACEBACK_ARTIFACTS_ROOT}/${job.traceId}/rule-audit.json`,
+    `${env.TRACEBACK_ARTIFACTS_ROOT}/${job.traceId}/video-demo.json`,
+    `${env.TRACEBACK_ARTIFACTS_ROOT}/${job.traceId}/visual-regression.json`,
+  ].map((artifact) => artifact);
   const gate = await evaluateEvidenceGate(artifactUris);
+  const reviewRisks = [
+    ...gate.failures,
+    ...(ruleAudit?.securityFindings ?? []),
+    ...(ruleAudit && ruleAudit.status !== "PASS" ? [`Rule audit status: ${ruleAudit.status}`] : []),
+    ...(visualEvidence && visualEvidence.status === "FAIL"
+      ? [`Visual evidence status: ${visualEvidence.status}`]
+      : []),
+  ];
 
   let testResult = "Verifier checks completed.";
   try {
@@ -37,6 +53,8 @@ export const runVerifier = async (
       `Changes: ${changeSet.diffSummary}`,
       `Artifacts present: ${gate.passed}`,
       `Artifact failures:\n- ${gate.failures.join("\n- ") || "none"}`,
+      `Rule audit: ${ruleAudit?.status ?? "not-run"}`,
+      `Visual evidence: ${visualEvidence?.status ?? "not-run"}`,
     ].join("\n\n");
     const runEnvelope = await runCursorPrompt({
       role: "verifier",
@@ -69,8 +87,10 @@ export const runVerifier = async (
     gateStatus: gate.passed ? "PASS" : "FAIL",
     gateChecks: gate.checks,
     testResults: [testResult],
-    securityFindings: gate.failures,
+    securityFindings: reviewRisks,
     artifactUris,
+    visualEvidence,
+    ruleAudit,
     humanReviewBrief: gate.passed
       ? `Verifier accepted output for ${changeSet.diffSummary}`
       : "Verifier blocked merge readiness due to missing required evidence artifacts.",

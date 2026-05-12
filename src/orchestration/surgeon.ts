@@ -4,9 +4,59 @@ import { MaintenanceJob } from "../queue/jobs/maintenance-job.js";
 import { runCursorPrompt } from "./cursor-agent.js";
 import { chooseModelForRole } from "./model-router.js";
 import { ChangeSetPacketSchema } from "../contracts/changeset-packet.js";
+import { SubagentResultPacket, SubagentResultPacketSchema } from "../contracts/subagent-packet.js";
 import { extractJsonObject } from "../utils/json.js";
 import { persistRunEnvelope } from "../observability/cost-ledger.js";
 import { recordWeaveTraceEvent } from "../observability/weave.js";
+
+const runSurgeonSubtasks = async (
+  job: MaintenanceJob,
+  plan: PlanPacket,
+): Promise<SubagentResultPacket[]> => {
+  const tasks = (plan.subagentTasks ?? []).slice(0, 2);
+  if (tasks.length === 0) return [];
+
+  const routing = chooseModelForRole("surgeon", job);
+  const runs = tasks.map(async (task) => {
+    const prompt = [
+      "/multitask depth=1",
+      "You are a bounded TraceBack Surgeon subagent. Do not spawn further subagents.",
+      "Return JSON only with keys: taskId, status, summary, filesModified, testsAddedOrUpdated, risks.",
+      `Task ID: ${task.id}`,
+      `Role: ${task.role}`,
+      `Objective: ${task.objective}`,
+      `Files:\n- ${task.filesOfInterest.join("\n- ") || "none"}`,
+      `Constraints:\n- ${task.constraints.join("\n- ") || "minimal edits"}`,
+      `Incident: ${job.incident.eventId}`,
+      `Plan: ${plan.incidentSummary}`,
+    ].join("\n\n");
+
+    try {
+      const runEnvelope = await runCursorPrompt({
+        role: "surgeon",
+        prompt,
+        modelId: routing.modelId,
+        cwd: process.cwd(),
+        agentName: `TraceBack Surgeon ${task.id}`,
+      });
+      await persistRunEnvelope(job.traceId, runEnvelope);
+      return SubagentResultPacketSchema.parse(JSON.parse(extractJsonObject(runEnvelope.outputText)));
+    } catch (error) {
+      return SubagentResultPacketSchema.parse({
+        taskId: task.id,
+        status: "SKIP",
+        summary: `Subagent task skipped or failed: ${
+          error instanceof Error ? error.message : "unknown Cursor SDK error"
+        }`,
+        filesModified: [],
+        testsAddedOrUpdated: [],
+        risks: ["subagent-task-not-completed"],
+      });
+    }
+  });
+
+  return Promise.all(runs);
+};
 
 export const runSurgeon = async (
   job: MaintenanceJob,
@@ -35,6 +85,7 @@ export const runSurgeon = async (
   let testsAddedOrUpdated = ["traceback_repro.test.ts"];
   const knownLimitations: string[] = [];
   const routing = chooseModelForRole("surgeon", job);
+  const subagentResults = await runSurgeonSubtasks(job, plan);
   try {
     await recordWeaveTraceEvent({
       traceId: job.traceId,
@@ -64,6 +115,7 @@ export const runSurgeon = async (
     whyThisFix = parsed.whyThisFix;
     testsAddedOrUpdated = parsed.testsAddedOrUpdated;
     knownLimitations.push(...parsed.knownLimitations);
+    subagentResults.push(...(parsed.subagentResults ?? []));
   } catch (error) {
     await recordWeaveTraceEvent({
       traceId: job.traceId,
@@ -82,5 +134,6 @@ export const runSurgeon = async (
     whyThisFix,
     testsAddedOrUpdated,
     knownLimitations: [...knownLimitations, `Routing reason: ${routing.reason}`],
+    subagentResults,
   };
 };
